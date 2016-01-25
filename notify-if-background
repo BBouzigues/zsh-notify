@@ -20,10 +20,11 @@
 # - growlnotify
 #   http://growl.info/extras.php/#growlnotify
 
-local term_id title icon_switch
-local -a otitle oicon
-zparseopts t:=otitle -icon:=oicon
+local term_id title icon_switch  foreground
+local -a otitle oicon oforeground
+zparseopts f:=oforeground t:=otitle -icon:=oicon
 
+foreground=$oforeground[2]
 icon=$oicon[2]
 title=$otitle[2]
 message=$(<&0)
@@ -37,6 +38,7 @@ message=$(<&0)
 [[ -z "$NOTIFY_NOTIFIER" ]] \
   && NOTIFY_NOTIFIER=$(which notify-send)
 
+
 if [[ "$TERM_PROGRAM" == 'iTerm.app' ]]; then
   term_id='com.googlecode.iterm2'
 elif [[ "$TERM_PROGRAM" == 'Apple_Terminal' ]]; then
@@ -48,6 +50,7 @@ else
   return 1;
 fi
 
+if [ "$foreground" != "always" ]; then
 if [[ $term_id == 'com.googlecode.iterm2' ]]; then
   TT='tell-iterm2'
   if [[ `$TT <<< "frontmost and (tty of (current session of current terminal) is equal to \"$TTY\")"` == "true" ]]; then
@@ -74,13 +77,12 @@ else
   # shouldn't actually get up to here
   return 2
 fi
+fi
 
-#cat /dev/stdin | growlnotify "$@"
-# growlnotify "$@" < /dev/stdin
 
 
 if [[ -x "$SYS_NOTIFIER" ]]; then
-  "$SYS_NOTIFIER" -activate "$term_id" -sender "$term_id" -title "$title" -message "$message" 1>/dev/null 
+  "$SYS_NOTIFIER" -activate "$term_id" -contentImage "$icon" -sender "$term_id" -title "$title" -message "$message" 1>/dev/null 
 elif [[ -x "$GROWL_NOTIFIER" ]]; then
   [[ ! -z "$icon" ]] && icon_switch="--iconpath $icon"
   echo "$message" | "$GROWL_NOTIFIER" "$title" 

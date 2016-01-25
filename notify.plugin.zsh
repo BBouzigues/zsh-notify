@@ -8,16 +8,26 @@ fpath=($fpath `dirname $0`)
 [[ $NOTIFY_COMMAND_COMPLETE_TIMEOUT == "" ]]  \
   && NOTIFY_COMMAND_COMPLETE_TIMEOUT=30
 
-# Notify an error with no regard to the time elapsed (but always only
-# when the terminal is in background).
+# Notify an error but only if it took at least $NOTIFY_COMMAND_COMPLETE_TIMEOUT or if terminal is in background
 function notify-error {
-  local icon
-  icon="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertStopIcon.icns"
-  notify-if-background -t "#fail" --image "$icon" < /dev/stdin &!
+  local display_mode now diff icon
+  start_time=$1
+  last_command="$2"
+  now=`date "+%s"`
+  # FIXME: Ugly 
+  icon=${ZDOTDIR:-$HOME}/.zprezto/modules/notify/external/warning.png
+  
+  ((diff = $now - $start_time ))
+  if (( $diff > $NOTIFY_COMMAND_COMPLETE_TIMEOUT )); then
+	  display_mode=always	  
+  else
+	  display_mode=background
+  fi
+  notify-if-background -f "${display_mode}" -t "${last_command}" --icon "$icon" <<< "Failure after ${diff} sec"&!	  
 }
 
 # Notify of successful command termination, but only if it took at least
-# 30 seconds (and if the terminal is in background).
+# $NOTIFY_COMMAND_COMPLETE_TIMEOUT seconds (and if the terminal is in background).
 function notify-success() {
   local now diff start_time last_command
 
@@ -27,7 +37,7 @@ function notify-success() {
 
   ((diff = $now - $start_time ))
   if (( $diff > $NOTIFY_COMMAND_COMPLETE_TIMEOUT )); then
-    notify-if-background -t "#win" <<< "$last_command" &!
+    notify-if-background -f always -t "$last_command" <<< "Success in ${diff} sec"&!
   fi
 }
 
@@ -35,7 +45,7 @@ function notify-success() {
 function notify-command-complete() {
   last_status=$?
   if [[ $last_status -gt "0" ]]; then
-    notify-error <<< $last_command
+    notify-error "$start_time" "$last_command"
   elif [[ -n $start_time ]]; then
     notify-success "$start_time" "$last_command"
   fi
