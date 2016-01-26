@@ -1,5 +1,5 @@
 # vim: set nowrap filetype=zsh:
-# 
+#
 # See README.md.
 #
 fpath=($fpath `dirname $0`)
@@ -14,16 +14,16 @@ function notify-error {
   start_time=$1
   last_command="$2"
   now=`date "+%s"`
-  # FIXME: Ugly 
+  # FIXME: Ugly
   icon=${ZDOTDIR:-$HOME}/.zprezto/modules/notify/external/warning.png
-  
+
   ((diff = $now - $start_time ))
   if (( $diff > $NOTIFY_COMMAND_COMPLETE_TIMEOUT )); then
-	  display_mode=always	  
+	  display_mode=always
   else
 	  display_mode=background
   fi
-  notify-if-background -f "${display_mode}" -t "${last_command}" --icon "$icon" <<< "Failure after ${diff} sec"&!	  
+  notify-if-background -f "${display_mode}" -t "${last_command}" --icon "$icon" <<< "Failure after ${diff} sec"&!
 }
 
 # Notify of successful command termination, but only if it took at least
@@ -44,10 +44,12 @@ function notify-success() {
 # Notify about the last command's success or failure.
 function notify-command-complete() {
   last_status=$?
-  if [[ $last_status -gt "0" ]]; then
-    notify-error "$start_time" "$last_command"
-  elif [[ -n $start_time ]]; then
-    notify-success "$start_time" "$last_command"
+  if [[ ! -z "$last_command" ]]; then
+    if [[ $last_status -gt "0" ]]; then
+      notify-error "$start_time" "$last_command"
+    elif [[ -n $start_time ]]; then
+      notify-success "$start_time" "$last_command"
+    fi
   fi
   unset last_command start_time last_status
 }
